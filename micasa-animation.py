@@ -10,7 +10,6 @@ import xarray as xr
 import pandas as pd
 import cartopy
 from cartopy import crs as ccrs, feature as cfeature
-import cartopy.io.img_tiles as cimgt
 import datetime
 import glob
 import os
@@ -114,15 +113,16 @@ img = plt.imread(map_path)
 # Define the image (covers the entire Earth)
 img_extent = (-180, 180, -90, 90)
 
-loop_start = time.time() # Start a timer
+loop_start = time.time() # Overall timer 
 
 for i, t in enumerate(ds_subset_mask.time):
 
-    iter_start = time.time() # Start a timer
+    iter_start = time.time() # Time each frame generation 
 
     fig, ax = plt.subplots(figsize=(12.8, 7.2), dpi=300, subplot_kw= {'projection': proj})
     ax.set_extent([min_lon,max_lon,min_lat,max_lat], crs=proj)
-
+    
+    # Add the background image to plot
     ax.imshow(img, origin='upper', extent=img_extent, transform=ccrs.PlateCarree(),alpha=0.9)
     
     # Subset data for the current time step
@@ -146,7 +146,6 @@ for i, t in enumerate(ds_subset_mask.time):
     # Save frame
     filedt = time_value.strftime('%Y%m%d%HZ').item()
     frame = f"{output_dir}/{filename}_{filedt}.png"
-    #print('starting save')
     plt.savefig(frame,dpi=300)
     plt.close(fig)  # Free memory
    
