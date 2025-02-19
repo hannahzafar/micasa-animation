@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import xarray as xr
 import pandas as pd
+import cartopy
 from cartopy import crs as ccrs, feature as cfeature
 import cartopy.io.img_tiles as cimgt
 import datetime
@@ -104,6 +105,14 @@ alpha = [(0.0, 1.0, 1.0), # Opaque at 0
 cdict = create_color_dict(colors,positions,alpha)
 custom_cmap = mcolors.LinearSegmentedColormap('custom_cmap', cdict)
 
+# Background Map Image
+# Import background image saved locally
+cartopy_files = os.path.join(cartopy.config['data_dir'],'mapimgs/')
+map_path = os.path.join(cartopy_files, 'world.200409.3x5400x2700.jpg')
+# Read in image  using maplotlib
+img = plt.imread(map_path)
+# Define the image (covers the entire Earth)
+img_extent = (-180, 180, -90, 90)
 
 loop_start = time.time() # Start a timer
 
@@ -111,10 +120,10 @@ for i, t in enumerate(ds_subset_mask.time):
 
     iter_start = time.time() # Start a timer
 
-    fig, ax = plt.subplots(figsize=(8, 6),subplot_kw= {'projection': proj})
-#    ax.stock_img() # default basemap
+    fig, ax = plt.subplots(figsize=(12.8, 7.2), dpi=300, subplot_kw= {'projection': proj})
     ax.set_extent([min_lon,max_lon,min_lat,max_lat], crs=proj)
-    # ax.add_image(tiler, 8)  # Zoom level
+
+    ax.imshow(img, origin='upper', extent=img_extent, transform=ccrs.PlateCarree(),alpha=0.9)
     
     # Subset data for the current time step
     data_at_time = ds_subset_mask.isel(time=i)
@@ -138,7 +147,7 @@ for i, t in enumerate(ds_subset_mask.time):
     filedt = time_value.strftime('%Y%m%d%HZ').item()
     frame = f"{output_dir}/{filename}_{filedt}.png"
     #print('starting save')
-    plt.savefig(frame)
+    plt.savefig(frame,dpi=300)
     plt.close(fig)  # Free memory
    
     
