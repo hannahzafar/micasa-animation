@@ -67,8 +67,8 @@ ds = xr.open_mfdataset(filepath, combine="by_coords", chunks={})['NEE']
 
 # ## Preprocess data for plotting
 # Plot only North America, drop unused lat/lon
-min_lon, max_lon = -170, -30
-min_lat, max_lat = 10, 70
+min_lon, max_lon = -140, -60
+min_lat, max_lat = 20, 50
 proj=ccrs.PlateCarree()
 
 # Plot only two days for testing
@@ -120,7 +120,7 @@ for i, t in enumerate(ds_subset_mask.time):
 
     iter_start = time.time() # Time each frame generation 
 
-    fig, ax = plt.subplots(figsize=(12.8, 7.2), dpi=300, subplot_kw= {'projection': proj},layout='constrained')
+    fig, ax = plt.subplots(figsize=(12.8, 7.2),subplot_kw= {'projection': proj},layout='constrained')
     ax.set_extent([min_lon,max_lon,min_lat,max_lat], crs=proj)
     
     # Add the background image to plot
@@ -160,7 +160,7 @@ for i, t in enumerate(ds_subset_mask.time):
     # Save frame
     filedt = time_value.strftime('%Y%m%d%HZ').item()
     frame = f"{output_dir}/{filename}_{filedt}.png"
-    plt.savefig(frame,dpi=300)
+    plt.savefig(frame,dpi=300, bbox_inches='tight', pad_inches=0)
     plt.close(fig)  # Free memory
    
     
