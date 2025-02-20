@@ -138,9 +138,23 @@ for i, t in enumerate(ds_subset_mask.time):
     title = time_value.strftime('%b %d %Y %H:%MZ').item()
     ax.set_title(title)
 
-    # Add colorbar
-    cbar = plt.colorbar(im, ax=ax, orientation='horizontal',pad=0.05)
-    cbar.set_label("NEE (kg m$^{-2}$ s$^{-1}$)")
+    # Colorbar
+    ## Create an inset axes for the colorbar
+    cax = inset_axes(ax, 
+                 width="40%", height="5%",
+                 loc='lower left',
+                borderpad=3.5,
+                )
+    
+    
+    ## Create colorbar and modify appearance
+    cbar = plt.colorbar(im, 
+                        cax=cax, 
+                        orientation='horizontal',
+                        extend='both',
+                       )
+    cbar.set_label("NEE (kg m$^{-2}$ s$^{-1}$)",,c='w',weight='bold')
+    cbar.ax.tick_params(which='both',color='white',labelcolor='white')
     
     # Save frame
     filedt = time_value.strftime('%Y%m%d%HZ').item()
