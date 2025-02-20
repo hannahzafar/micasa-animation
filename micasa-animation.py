@@ -153,7 +153,7 @@ for i, t in enumerate(ds_subset_mask.time):
                         orientation='horizontal',
                         extend='both',
                        )
-    cbar.set_label("NEE (kg m$^{-2}$ s$^{-1}$)",,c='w',weight='bold')
+    cbar.set_label("NEE (kg m$^{-2}$ s$^{-1}$)",c='w',weight='bold')
     cbar.ax.tick_params(which='both',color='white',labelcolor='white')
     
     # Save frame
