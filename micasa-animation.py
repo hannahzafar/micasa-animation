@@ -119,7 +119,7 @@ loop_start = time.time() # Overall timer
 for i, t in enumerate(ds_subset_mask.time):
 
     iter_start = time.time() # Time each frame generation 
-
+    
     fig, ax = plt.subplots(figsize=(12.8, 7.2),subplot_kw= {'projection': proj},layout='constrained')
     ax.set_extent([min_lon,max_lon,min_lat,max_lat], crs=proj)
     
