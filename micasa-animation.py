@@ -119,7 +119,7 @@ for i, t in enumerate(ds_subset_mask.time):
 
     iter_start = time.time() # Time each frame generation 
 
-    fig, ax = plt.subplots(figsize=(12.8, 7.2), dpi=300, subplot_kw= {'projection': proj})
+    fig, ax = plt.subplots(figsize=(12.8, 7.2), dpi=300, subplot_kw= {'projection': proj},layout='constrained')
     ax.set_extent([min_lon,max_lon,min_lat,max_lat], crs=proj)
     
     # Add the background image to plot
@@ -141,7 +141,6 @@ for i, t in enumerate(ds_subset_mask.time):
     # Add colorbar
     cbar = plt.colorbar(im, ax=ax, orientation='horizontal',pad=0.05)
     cbar.set_label("NEE (kg m$^{-2}$ s$^{-1}$)")
-
     
     # Save frame
     filedt = time_value.strftime('%Y%m%d%HZ').item()
