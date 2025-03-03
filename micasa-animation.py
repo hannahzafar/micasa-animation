@@ -9,8 +9,11 @@ import matplotlib.colors as mcolors
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import xarray as xr
 import pandas as pd
-import cartopy
+import cartopy 
+cartopy.config['data_dir'] = '/home/hzafar/.local/share/cartopy'
+cartopy.config['pre_existing_data_dir'] = '/home/hzafar/.local/share/cartopy'
 from cartopy import crs as ccrs, feature as cfeature
+# import cartopy.io.img_tiles as cimgt
 import datetime
 import glob
 import os
@@ -67,8 +70,8 @@ ds = xr.open_mfdataset(filepath, combine="by_coords", chunks={})['NEE']
 
 # ## Preprocess data for plotting
 # Plot only North America, drop unused lat/lon
-min_lon, max_lon = -140, -60
-min_lat, max_lat = 20, 50
+min_lon, max_lon = -140, -55
+min_lat, max_lat = 15, 60
 proj=ccrs.PlateCarree()
 
 # Plot only two days for testing
@@ -106,13 +109,17 @@ cdict = create_color_dict(colors,positions,alpha)
 custom_cmap = mcolors.LinearSegmentedColormap('custom_cmap', cdict)
 
 # Background Map Image
+
 # Import background image saved locally
 cartopy_files = os.path.join(cartopy.config['data_dir'],'mapimgs/')
-map_path = os.path.join(cartopy_files, 'world.200409.3x5400x2700.jpg')
+map_path = os.path.join(cartopy_files, 'world.topo.bathy.200409.3x5400x2700.jpg')
 # Read in image  using maplotlib
 img = plt.imread(map_path)
 # Define the image (covers the entire Earth)
 img_extent = (-180, 180, -90, 90)
+
+
+# google_terrain = cimgt.GoogleTiles(style="satellite",cache=True)
 
 loop_start = time.time() # Overall timer 
 
@@ -120,41 +127,48 @@ for i, t in enumerate(ds_subset_mask.time):
 
     iter_start = time.time() # Time each frame generation 
     
-    fig, ax = plt.subplots(figsize=(12.8, 7.2),subplot_kw= {'projection': proj},layout='constrained')
+    fig, ax = plt.subplots(figsize=(12.8, 7.2),dpi=300,subplot_kw= {'projection': proj},layout='constrained')
+    
+    title_str = 'MiCASA Land Carbon Net Ecosystem Exchange (NEE)'
+    ax.set_title(title_str, fontsize=20,  weight='bold', c='w',
+                 y=0.94,
+                 bbox=dict(facecolor=[0,0,0,0.5], edgecolor='None'))
+    
     ax.set_extent([min_lon,max_lon,min_lat,max_lat], crs=proj)
     
-    # Add the background image to plot
+    # Background image
     ax.imshow(img, origin='upper', extent=img_extent, transform=ccrs.PlateCarree(),alpha=0.9)
+    # ax.add_image(google_terrain, 8)
     
-    # Subset data for the current time step
+    # Subset data for the current time step and plot
     data_at_time = ds_subset_mask.isel(time=i)
- 
-    # Extract time value
-    time_value = data_at_time.time.dt
-
-    # Create plot
     im = ax.pcolormesh(data_at_time.lon, data_at_time.lat, data_at_time.variable,
                        cmap=custom_cmap, vmin=-2e-7, vmax=2e-7)
 
-    title = time_value.strftime('%b %d %Y %H:%MZ').item()
-    ax.set_title(title)
+    # Extract datetime string
+    time_value = data_at_time.time.dt
+    time_str = time_value.strftime('%b %d %Y %H:%MZ').item()
+    # Add time bottom right
+    ax.text(0.99,0.02, time_str, fontsize=15, c='w', weight='bold', 
+            ha='right',
+            transform=ax.transAxes,
+            bbox=dict(facecolor=[0,0,0,0.5], edgecolor='None'))
 
     # Colorbar
     ## Create an inset axes for the colorbar
     cax = inset_axes(ax, 
-                 width="40%", height="5%",
-                 loc='lower left',
-                borderpad=3.5,
-                )
-    
-    
-    ## Create colorbar and modify appearance
+                     width="35%", height="5%",
+                     loc='lower left',
+                     bbox_to_anchor=(0.02, 0.08, 1, 1), bbox_transform=ax.transAxes, 
+                     borderpad=0
+                    )
+    ## Create colorbar
     cbar = plt.colorbar(im, 
                         cax=cax, 
                         orientation='horizontal',
                         extend='both',
                        )
-    cbar.set_label("NEE (kg m$^{-2}$ s$^{-1}$)",c='w',weight='bold')
+    cbar.set_label(label = "NEE (kg m$^{-2}$ s$^{-1}$)",weight='bold',c='w')
     cbar.ax.tick_params(which='both',color='white',labelcolor='white')
     
     # Save frame
@@ -168,7 +182,7 @@ for i, t in enumerate(ds_subset_mask.time):
     iter_elapsed = iter_end - iter_start
     iter_minutes = int(iter_elapsed // 60)
     iter_seconds = int(iter_elapsed % 60)
-    print(f"{title} took {iter_minutes} min {iter_seconds} sec")
+    print(f"{time_str} took {iter_minutes} min {iter_seconds} sec")
    
 loop_end = time.time()
 loop_elapsed = loop_end - loop_start
