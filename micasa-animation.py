@@ -118,9 +118,6 @@ img = plt.imread(map_path)
 # Define the image (covers the entire Earth)
 img_extent = (-180, 180, -90, 90)
 
-
-# google_terrain = cimgt.GoogleTiles(style="satellite",cache=True)
-
 loop_start = time.time() # Overall timer 
 
 for i, t in enumerate(ds_subset_mask.time):
@@ -138,7 +135,7 @@ for i, t in enumerate(ds_subset_mask.time):
     
     # Background image
     ax.imshow(img, origin='upper', extent=img_extent, transform=ccrs.PlateCarree(),alpha=0.9)
-    # ax.add_image(google_terrain, 8)
+
     
     # Subset data for the current time step and plot
     data_at_time = ds_subset_mask.isel(time=i)
