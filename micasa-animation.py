@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-# matplotlib.use('Agg') #improve speed
+mpl.use('Agg') #improve speed
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import xarray as xr
 import pandas as pd
