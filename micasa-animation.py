@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+# matplotlib.use('Agg') #improve speed
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import xarray as xr
 import pandas as pd
@@ -13,12 +14,14 @@ import cartopy
 cartopy.config['data_dir'] = '/home/hzafar/.local/share/cartopy'
 cartopy.config['pre_existing_data_dir'] = '/home/hzafar/.local/share/cartopy'
 from cartopy import crs as ccrs, feature as cfeature
-# import cartopy.io.img_tiles as cimgt
 import datetime
 import glob
 import os
 import sys
 
+# Increase the pixel limit for image
+from PIL import Image
+Image.MAX_IMAGE_PIXELS = 233280000
 
 # Functions
 def get_single_match(pattern):
@@ -109,10 +112,9 @@ cdict = create_color_dict(colors,positions,alpha)
 custom_cmap = mcolors.LinearSegmentedColormap('custom_cmap', cdict)
 
 # Background Map Image
-
 # Import background image saved locally
 cartopy_files = os.path.join(cartopy.config['data_dir'],'mapimgs/')
-map_path = os.path.join(cartopy_files, 'world.topo.bathy.200409.3x5400x2700.jpg')
+map_path = os.path.join(cartopy_files, 'world.topo.bathy.200409.3x21600x10800.jpg')
 # Read in image  using maplotlib
 img = plt.imread(map_path)
 # Define the image (covers the entire Earth)
