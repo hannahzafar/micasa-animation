@@ -69,7 +69,7 @@ def create_color_dict(colors, positions, alpha=None):
 
 # ## Import NEE data
 filepath = 'micasa-data/daily-0.1deg-final/holding/3hrly/2024/09/MiCASA_v1_flux_x3600_y1800_3hrly_202409*.nc4'
-ds = xr.open_mfdataset(filepath, combine="by_coords", chunks={})['NEE']
+ds = xr.open_mfdataset(filepath, combine="by_coords", chunks='auto')['NEE']
 
 # ## Preprocess data for plotting
 # Plot only North America, drop unused lat/lon
