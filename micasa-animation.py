@@ -61,8 +61,26 @@ parser = argparse.ArgumentParser(description='User-specified parameters')
 parser.add_argument('output_dir', type=str)
 args = parser.parse_args()
 output_dir = args.output_dir
-
 desc = 'micasa' # File descriptor
+
+
+# ## Import NEE data
+filepath = 'micasa-data/daily-0.1deg-final/holding/3hrly/2024/09/MiCASA_v1_flux_x3600_y1800_3hrly_202409*.nc4'
+ds = xr.open_mfdataset(filepath, combine="by_coords", chunks='auto')['NEE']
+
+# ## Preprocess data for plotting
+# Plot only North America, drop unused lat/lon
+min_lon, max_lon = -140, -55
+min_lat, max_lat = 15, 60
+proj=ccrs.PlateCarree()
+
+# Plot only two days for testing
+time_start, time_stop = '2024-09-26', '2024-09-27'
+
+ds_subset = ds.sel(lat=slice(min_lat, max_lat), lon=slice(min_lon,max_lon),time=slice(time_start,time_stop))
+
+# mask zeroes
+ds_subset_mask = ds_subset.where(ds_subset != 0)
 
 # Define the colormap colors/transparency
 colors = [
@@ -84,97 +102,104 @@ alpha = [(0.0, 1.0, 1.0), # Opaque at 0
 cdict = create_color_dict(colors,positions,alpha)
 custom_cmap = mcolors.LinearSegmentedColormap('custom_cmap', cdict)
 
+
+# Start a timer to measure prerendered background time
+iter_start = time.time() 
+
 # Background Map Image
 # Import background image saved locally
 cartopy_files = os.path.join(cartopy.config['data_dir'],'mapimgs/')
 map_path = os.path.join(cartopy_files, 'world.topo.bathy.200409.3x21600x10800.jpg')
+
 # Read in image  using maplotlib
 img = plt.imread(map_path)
+
 # Define the image (covers the entire Earth)
 img_extent = (-180, 180, -90, 90)
 
-# ## Import NEE data
-filepath = 'micasa-data/daily-0.1deg-final/holding/3hrly/2024/09/MiCASA_v1_flux_x3600_y1800_3hrly_202409*.nc4'
-ds = xr.open_mfdataset(filepath, combine="by_coords", chunks='auto')['NEE']
+# Create figure and axes once
+fig, ax = plt.subplots(figsize=(12.8, 7.2),dpi=300,subplot_kw= {'projection': proj},layout='constrained')
+ax.set_extent([min_lon,max_lon,min_lat,max_lat], crs=proj)
+ 
+# Main title does not change
+title_str = 'MiCASA Land Carbon Net Ecosystem Exchange (NEE)'
+ax.set_title(title_str, fontsize=20,  weight='bold', c='w',y=0.94,
+             bbox=dict(facecolor=[0,0,0,0.5], edgecolor='None'))
 
-# ## Preprocess data for plotting
-# Plot only North America, drop unused lat/lon
-min_lon, max_lon = -140, -55
-min_lat, max_lat = 15, 60
-proj=ccrs.PlateCarree()
-
-# Plot only two days for testing
-time_start, time_stop = '2024-09-26', '2024-09-27'
-
-ds_subset = ds.sel(lat=slice(min_lat, max_lat), lon=slice(min_lon,max_lon),time=slice(time_start,time_stop))
-
-# mask zeroes
-ds_subset_mask = ds_subset.where(ds_subset != 0)
+# Pre-render the background image once
+ax.imshow(img, origin='upper', extent=img_extent, transform=ccrs.PlateCarree(),alpha=0.9)
 
 
-loop_start = time.time() # Overall timer 
+# Initialize plot with first time step
+data_at_time = ds_subset_mask.isel(time=0)
+mesh = ax.pcolormesh(data_at_time.lon, data_at_time.lat, data_at_time.variable,
+                   cmap=custom_cmap, vmin=-2e-7, vmax=2e-7)
 
+# Colorbar
+## Create an inset axes for the colorbar
+cax = inset_axes(ax, 
+                 width="35%", height="5%",
+                 loc='lower left',
+                 bbox_to_anchor=(0.02, 0.08, 1, 1), bbox_transform=ax.transAxes, 
+                 borderpad=0
+                )
+## Create colorbar
+cbar = plt.colorbar(mesh, 
+                    cax=cax, 
+                    orientation='horizontal',
+                    extend='both')
+cbar.set_label(label = "NEE (kg m$^{-2}$ s$^{-1}$)",weight='bold',c='w')
+cbar.ax.tick_params(which='both',color='white',labelcolor='white')
+    
+# Create text for time label (to be updated in the loop)
+time_value = data_at_time.time.dt
+time_str = time_value.strftime('%b %d %Y %H:%MZ').item()
+time_text = ax.text(0.99,0.02, time_str, fontsize=15, c='w', weight='bold', 
+        ha='right', transform=ax.transAxes,
+        bbox=dict(facecolor=[0,0,0,0.5], edgecolor='None'))
+
+
+
+# Save first frame
+filedt = time_value.strftime('%Y%m%d%HZ').item()
+frame = f"{output_dir}/{desc}_{filedt}.png"
+plt.savefig(frame,dpi=300, bbox_inches='tight', pad_inches=0)
+
+iter_end = time.time()
+iter_elapsed = iter_end - iter_start
+iter_minutes = int(iter_elapsed // 60)
+iter_seconds = int(iter_elapsed % 60)
+
+print(f"Background image took {iter_minutes} min {iter_seconds} sec")
+
+# Loop over frames, replacing the mesh data and time label only 
+loop_start = time.time() # time total loop 
 for i, t in enumerate(ds_subset_mask.time):
 
-    iter_start = time.time() # Time each frame generation 
-    
-    fig, ax = plt.subplots(figsize=(12.8, 7.2),dpi=300,subplot_kw= {'projection': proj},layout='constrained')
-    
-    title_str = 'MiCASA Land Carbon Net Ecosystem Exchange (NEE)'
-    ax.set_title(title_str, fontsize=20,  weight='bold', c='w',
-                 y=0.94,
-                 bbox=dict(facecolor=[0,0,0,0.5], edgecolor='None'))
-    
-    ax.set_extent([min_lon,max_lon,min_lat,max_lat], crs=proj)
-    
-    # Background image
-    ax.imshow(img, origin='upper', extent=img_extent, transform=ccrs.PlateCarree(),alpha=0.9)
+    if i > 0: # Skip first frame already generated    
+        iter_start = time.time() # Time each frame generation 
+        
+        # Update data values
+        data_at_time = ds_subset_mask.isel(time=i)
+        mesh.set_array(data_at_time.variable.values.ravel())
 
-    
-    # Subset data for the current time step and plot
-    data_at_time = ds_subset_mask.isel(time=i)
-    im = ax.pcolormesh(data_at_time.lon, data_at_time.lat, data_at_time.variable,
-                       cmap=custom_cmap, vmin=-2e-7, vmax=2e-7)
-
-    # Extract datetime string
-    time_value = data_at_time.time.dt
-    time_str = time_value.strftime('%b %d %Y %H:%MZ').item()
-    # Add time bottom right
-    ax.text(0.99,0.02, time_str, fontsize=15, c='w', weight='bold', 
-            ha='right',
-            transform=ax.transAxes,
-            bbox=dict(facecolor=[0,0,0,0.5], edgecolor='None'))
-
-    # Colorbar
-    ## Create an inset axes for the colorbar
-    cax = inset_axes(ax, 
-                     width="35%", height="5%",
-                     loc='lower left',
-                     bbox_to_anchor=(0.02, 0.08, 1, 1), bbox_transform=ax.transAxes, 
-                     borderpad=0
-                    )
-    ## Create colorbar
-    cbar = plt.colorbar(im, 
-                        cax=cax, 
-                        orientation='horizontal',
-                        extend='both',
-                       )
-    cbar.set_label(label = "NEE (kg m$^{-2}$ s$^{-1}$)",weight='bold',c='w')
-    cbar.ax.tick_params(which='both',color='white',labelcolor='white')
-    
-    # Save frame
-    filedt = time_value.strftime('%Y%m%d%HZ').item()
-    frame = f"{output_dir}/{desc}_{filedt}.png"
-    plt.savefig(frame,dpi=300, bbox_inches='tight', pad_inches=0)
-    plt.close(fig)  # Free memory
+        # Update the time text
+        time_value = data_at_time.time.dt
+        time_str = time_value.strftime('%b %d %Y %H:%MZ').item()
+        time_text.set_text(time_str)
    
-    
-    iter_end = time.time()
-    iter_elapsed = iter_end - iter_start
-    iter_minutes = int(iter_elapsed // 60)
-    iter_seconds = int(iter_elapsed % 60)
-    print(f"{time_str} took {iter_minutes} min {iter_seconds} sec")
+        # Save frame
+        filedt = time_value.strftime('%Y%m%d%HZ').item()
+        frame = f"{output_dir}/{desc}_{filedt}.png"
+        plt.savefig(frame,dpi=300, bbox_inches='tight', pad_inches=0)
    
+        
+        iter_end = time.time()
+        iter_elapsed = iter_end - iter_start
+        iter_minutes = int(iter_elapsed // 60)
+        iter_seconds = int(iter_elapsed % 60)
+        print(f"{time_str} took {iter_minutes} min {iter_seconds} sec")
+  
 loop_end = time.time()
 loop_elapsed = loop_end - loop_start
 loop_minutes = int(loop_elapsed // 60)
