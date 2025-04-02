@@ -18,6 +18,7 @@ import datetime
 import glob
 import os
 import sys
+import argparse
 
 # Increase the pixel limit for image
 from PIL import Image
@@ -55,29 +56,15 @@ def create_color_dict(colors, positions, alpha=None):
 
     return cdict
 
+# Parse input arguments
+parser = argparse.ArgumentParser(description='User-specified parameters')
+parser.add_argument('output_dir', type=str)
+args = parser.parse_args()
+output_dir = args.output_dir
 
-# ## Import NEE data
-filepath = 'micasa-data/daily-0.1deg-final/holding/3hrly/2024/09/MiCASA_v1_flux_x3600_y1800_3hrly_202409*.nc4'
-ds = xr.open_mfdataset(filepath, combine="by_coords", chunks='auto')['NEE']
-
-# ## Preprocess data for plotting
-# Plot only North America, drop unused lat/lon
-min_lon, max_lon = -140, -55
-min_lat, max_lat = 15, 60
-proj=ccrs.PlateCarree()
-
-# Plot only two days for testing
-time_start, time_stop = '2024-09-26', '2024-09-27'
-
-ds_subset = ds.sel(lat=slice(min_lat, max_lat), lon=slice(min_lon,max_lon),time=slice(time_start,time_stop))
-
-# mask zeroes
-ds_subset_mask = ds_subset.where(ds_subset != 0)
-
-# Define output directory
-output_dir = "frames"
-os.makedirs(output_dir, exist_ok=True)
-filename = 'micasa'
+# Make directory if it doesn't exist
+os.makedirs(output_dir)
+desc = 'micasa' # File descriptor
 
 
 # Define the colormap colors/transparency
@@ -108,6 +95,25 @@ map_path = os.path.join(cartopy_files, 'world.topo.bathy.200409.3x21600x10800.jp
 img = plt.imread(map_path)
 # Define the image (covers the entire Earth)
 img_extent = (-180, 180, -90, 90)
+
+# ## Import NEE data
+filepath = 'micasa-data/daily-0.1deg-final/holding/3hrly/2024/09/MiCASA_v1_flux_x3600_y1800_3hrly_202409*.nc4'
+ds = xr.open_mfdataset(filepath, combine="by_coords", chunks='auto')['NEE']
+
+# ## Preprocess data for plotting
+# Plot only North America, drop unused lat/lon
+min_lon, max_lon = -140, -55
+min_lat, max_lat = 15, 60
+proj=ccrs.PlateCarree()
+
+# Plot only two days for testing
+time_start, time_stop = '2024-09-26', '2024-09-27'
+
+ds_subset = ds.sel(lat=slice(min_lat, max_lat), lon=slice(min_lon,max_lon),time=slice(time_start,time_stop))
+
+# mask zeroes
+ds_subset_mask = ds_subset.where(ds_subset != 0)
+
 
 loop_start = time.time() # Overall timer 
 
@@ -161,7 +167,7 @@ for i, t in enumerate(ds_subset_mask.time):
     
     # Save frame
     filedt = time_value.strftime('%Y%m%d%HZ').item()
-    frame = f"{output_dir}/{filename}_{filedt}.png"
+    frame = f"{output_dir}/{desc}_{filedt}.png"
     plt.savefig(frame,dpi=300, bbox_inches='tight', pad_inches=0)
     plt.close(fig)  # Free memory
    
