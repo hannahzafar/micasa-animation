@@ -62,10 +62,7 @@ parser.add_argument('output_dir', type=str)
 args = parser.parse_args()
 output_dir = args.output_dir
 
-# Make directory if it doesn't exist
-os.makedirs(output_dir)
 desc = 'micasa' # File descriptor
-
 
 # Define the colormap colors/transparency
 colors = [
