@@ -23,17 +23,6 @@ import sys
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = 233280000
 
-# Functions
-def get_single_match(pattern):
-    matches = glob.glob(pattern)
-    if len(matches) == 1:
-        return matches[0]
-    elif len(matches) == 0:
-        raise ValueError(f"No matches found")
-    else:
-        raise ValueError(f"Multiple matches found: {matches}")
-
-
 def normalize_rgb(colors):
     """Normalize a list of RGB colors from 0-255 to 0-1 range."""
     return [(r/255, g/255, b/255) for r, g, b in colors]
