@@ -1,7 +1,7 @@
 # Ignore the following for git:
 # Files
 *.ipynb_checkpoints
-
+*.out
 # Folders
 frames/
 micasa-data
