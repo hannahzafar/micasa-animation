@@ -18,8 +18,9 @@ module purge
 module load python/GEOSpyD/Min24.4.0-0_py3.12
 
 # Make directory for test
-mkdir -p $1
-LOG_FILE="$1/output.log"
+OUTPUT_DIR="frames/${1}"
+mkdir -p "$OUTPUT_DIR"
+LOG_FILE="$OUTPUT_DIR/output.log"
 
-python -u micasa-animation.py "$1" | tee "$LOG_FILE"
+python -u micasa-animation.py "$OUTPUT_DIR" | tee "$LOG_FILE"
 echo -e "\n Run Description: $2" >> "$LOG_FILE" 
