@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Wrapper script to run sbatch on micasa-animation-batch.sh
+# Wrapper script to run sbatch job
+# Creates a directory to save frames and runs micasa-animation.py via compute node
 
 # Ensure arguments are passed
 if [[ $# -ne 2 ]]; then
@@ -15,6 +16,7 @@ fi
 
 # Create log directory
 mkdir -p "frames/${1}"
+
 
 # Run sbatch script with args
 sbatch <<EOT
